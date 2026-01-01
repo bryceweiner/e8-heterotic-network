@@ -8,6 +8,7 @@ operations, and numerical validation used throughout the E8×E8 heterotic framew
 import numpy as np
 from typing import List, Tuple, Optional, Union
 from itertools import combinations
+
 from e8_heterotic.core.constants import (
     E8_ROOT_NORM, DOT_PRODUCT_TOLERANCE, ANGLE_TOLERANCE,
     ADJACENCY_DOT_PRODUCTS, NORM_TOLERANCE
@@ -376,34 +377,6 @@ def calculate_geometric_properties(roots: np.ndarray) -> dict:
             'max': float(np.max(dot_products))
         }
     }
-
-def safe_sparse_matrix_multiply(matrix_a: Union[np.ndarray, 'torch.Tensor'],
-                               matrix_b: Union[np.ndarray, 'torch.Tensor'],
-                               use_sparse: bool = True) -> Union[np.ndarray, 'torch.Tensor']:
-    """
-    Safely multiply matrices, handling sparse/dense compatibility.
-
-    Args:
-        matrix_a: First matrix
-        matrix_b: Second matrix
-        use_sparse: Whether to attempt sparse operations
-
-    Returns:
-        Result of matrix multiplication
-    """
-    # For numpy arrays
-    if isinstance(matrix_a, np.ndarray) and isinstance(matrix_b, np.ndarray):
-        return np.dot(matrix_a, matrix_b)
-
-    # For torch tensors, let PyTorch handle the details
-    try:
-        return matrix_a @ matrix_b
-    except Exception as e:
-        # Fallback to explicit matrix multiplication
-        if hasattr(matrix_a, 'mm'):
-            return matrix_a.mm(matrix_b)
-        else:
-            raise e
 
 # =============================================================================
 # E8 SPECIFIC MATHEMATICAL FUNCTIONS
