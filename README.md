@@ -1,310 +1,144 @@
-# E8×E8 Heterotic Network: Geometric Deep Learning Layer
+# E8 ⊕ E8 Root System: Honest Clustering Analysis
 
-[![PyPI version](https://badge.fury.io/py/e8-heterotic-network.svg)](https://pypi.org/project/e8-heterotic-network/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+A Python library that constructs the E8 and E8 ⊕ E8 root systems from
+first principles and reports their adjacency-graph clustering coefficients
+under four canonical conventions.
 
-A PyTorch implementation of the 496-dimensional E8×E8 heterotic structure from string theory, providing a mathematically rigorous geometric deep learning layer with guaranteed optimal information propagation properties.
+## What this library does
 
-## 🧮 Mathematical Foundation
+1. Constructs the standard E8 root system (240 roots in ℝ⁸, all squared
+   norm 2) from explicit formulas.
+2. Constructs E8 ⊕ E8 as the direct sum (480 roots in ℝ¹⁶, organised as
+   two orthogonal blocks of 240 roots each).
+3. Defines four adjacency conventions, each by a single rule on the inner
+   product matrix.
+4. Counts triangles (via `trace(A³)/6`, cross-checked against NetworkX)
+   and wedges, and reports global / mean-local clustering for each
+   convention on each system.
 
-The E8×E8 heterotic network implements the heterotic string theory construction where two independent E8 exceptional Lie algebras combine to form a 496-dimensional structure that governs fundamental information processing.
+## Headline numbers
 
-### Key Properties
-- **Exact Clustering Coefficient**: C(G) = 25/32 = 0.78125 (mathematically guaranteed)
-- **Dimension**: 496 generators in 16-dimensional embedding space
-- **Root System**: 240 roots + 8 Cartan generators per E8 factor
-- **Holographic Bounds**: Information pressure scaling with Iₘₐₓ = 496×ln(2)
+Both single E8 and E8 ⊕ E8 produce identical clustering values, since
+the orthogonal blocks split the direct-sum graph into two disjoint
+copies of the E8 root graph.
 
-### Theoretical Derivation
-The clustering coefficient C(G) = 25/32 arises from the geometric constraint that for any three roots forming a triangle in the E8×E8 structure, exactly 25 out of 32 possible configurations satisfy the angle relationships required for triangle formation.
+| Convention | Edge rule       | Degree | Triangles | C_global       | Closed form |
+|:----------:|-----------------|:------:|----------:|---------------:|:-----------:|
+| A          | ⟨α, β⟩ = +1     | 56     | 60,480    | 0.4909090909   | 27/55       |
+| B          | ⟨α, β⟩ ≠ 0      | 113    | 264,320   | 0.5221238938   | 59/113      |
+| C          | \|⟨α, β⟩\| = 1  | 112    | 250,880   | 0.5045045045   | 56/111      |
+| D          | ⟨α, β⟩ = −1     | 56     | 2,240     | 0.0181818182   | 1/55        |
 
-## 🚀 Installation
+
+## Installation
 
 ```bash
-pip install e8-heterotic-network
+pip install -e .
 ```
 
-### Optional Dependencies
+The core analysis only requires `numpy` and `networkx`. The optional
+PyTorch layer requires `torch` in addition.
+
+## Running the analysis
+
 ```bash
-pip install e8-heterotic-network[all]  # Full installation with visualization
-pip install e8-heterotic-network[dev]  # Development tools
+python -m e8_heterotic.cli.compute_clustering
 ```
 
-## 📖 Quick Start
+This prints the inner-product distribution, per-convention degree /
+edge / triangle / wedge / clustering counts for both single E8 and
+E8 ⊕ E8, and writes a JSON results file (with a SHA-256
+reproducibility manifest) to `results/clustering_<timestamp>.json`.
+Two runs on the same library versions produce byte-identical manifest
+hashes.
 
-### Basic Usage
+Flags:
 
-```python
-import torch
-from e8_heterotic import E8E8Layer
+- `--verbose` — DEBUG-level logging
+- `--quiet`   — WARNING-level logging only
+- `--results-dir <path>` — override the JSON output directory
 
-# Create E8×E8 layer
-layer = E8E8Layer(input_dim=128, output_dim=64)
-
-# Forward pass
-x = torch.randn(32, 128)  # Batch of 32, 128 features
-output = layer(x)  # Shape: (32, 64)
-
-print(f"Clustering coefficient: {layer.get_clustering_coefficient():.8f}")
-# Output: Clustering coefficient: 0.781250
-```
-
-### Advanced Usage
+## Library API
 
 ```python
-import torch
-from e8_heterotic import E8E8Layer, get_e8_clustering_coefficient
-
-# Verify mathematical properties
-print(f"E8×E8 clustering coefficient: {get_e8_clustering_coefficient():.8f}")
-
-# Create layer with custom propagation steps
-layer = E8E8Layer(
-    input_dim=256,
-    output_dim=128,
-    propagation_steps=5,  # Multiple propagation steps
-    device='cuda' if torch.cuda.is_available() else 'cpu'
+from e8_heterotic import (
+    construct_e8_roots,
+    construct_e8xe8_roots,
+    adjacency_inner_product_one,         # Convention A
+    adjacency_inner_product_nonzero,     # Convention B
+    adjacency_absolute_inner_product_one,  # Convention C
+    adjacency_inner_product_minus_one,   # Convention D
+    count_triangles_and_wedges,
+    global_clustering_coefficient,
+    mean_local_clustering_coefficient,
+    E8xE8RootSystem,
 )
 
-# Process sequential data
-x = torch.randn(16, 50, 256)  # (batch, seq_len, features)
-output = layer(x)  # Shape: (16, 50, 128)
+roots = construct_e8xe8_roots()                 # (480, 16)
+adjacency = adjacency_inner_product_one(roots)  # (480, 480) bool
+triangles, wedges = count_triangles_and_wedges(adjacency)
+c_global = global_clustering_coefficient(adjacency)
+
+# Or use the orchestrator for all four conventions at once:
+system = E8xE8RootSystem()
+results = system.analyze('e8xe8')
 ```
 
-### Direct Construction Access
+## PyTorch layer
+
+The PyTorch layer at `e8_heterotic.core.network.E8E8Layer` uses the
+honest 480-vertex E8 ⊕ E8 root graph. The clustering coefficient it
+reports is whatever the chosen adjacency convention produces — there is
+no longer an assertion that the value equals any pre-determined target.
 
 ```python
-from e8_heterotic import E8HeteroticSystem, get_e8_cache
+from e8_heterotic import E8E8Layer
 
-# Create heterotic system
-system = E8HeteroticSystem(precision='double', validate=True)
-heterotic_roots = system.construct_heterotic_system()
-adjacency_matrix = system.compute_adjacency_matrix()
-properties = system.analyze_network_properties()
-
-print(f"System shape: {heterotic_roots.shape}")
-print(f"Network edges: {properties['num_edges']}")
-print(f"Clustering coefficient: {properties['clustering_coefficient']:.8f}")
-
-# Use cached version (recommended for performance)
-cache = get_e8_cache()
-roots = cache.get_root_system()
-adjacency = cache.get_adjacency_matrix()
+layer = E8E8Layer(input_dim=128, output_dim=64, adjacency_convention='A')
+print(f"Computed clustering: {layer.get_clustering_coefficient():.10f}")
+# 0.4909090909
 ```
 
-## 🏗️ Architecture
+## Module layout
 
-### Core Components
-
-#### `E8HeteroticSystem`
-Mathematical construction and validation of the E8×E8 structure.
-- **Precision**: Support for `float64` and `float128` numerical precision
-- **Validation**: Comprehensive checks against theoretical predictions
-- **Key Methods**:
-  - `construct_heterotic_system()`: Builds the 496×16 root system
-  - `compute_adjacency_matrix()`: Calculates geometric connectivity
-  - `calculate_exact_clustering_coefficient()`: Verifies C(G) = 25/32
-
-#### `E8Cache`
-Persistent caching system for expensive computations.
-- **Storage**: Pickle serialization of numpy arrays
-- **Artifacts**: Root systems, adjacency matrices, network properties
-- **Singleton Pattern**: Shared cache across all instances
-
-#### `E8E8Layer` (PyTorch Module)
-Differentiable geometric information processing layer.
-- **Input/Output**: Arbitrary dimensions via linear projections
-- **Propagation**: Sparse matrix multiplication through E8×E8 structure
-- **Holographic Bounds**: Information pressure enforcement
-- **Hardware Acceleration**: CUDA/MPS/CPU with sparse optimization
-
-### Directory Structure
 ```
 e8_heterotic/
 ├── core/
-│   ├── constants.py           # Physical constants (C(G)=25/32, etc.)
-│   ├── construction.py        # E8HeteroticSystem implementation
-│   ├── cache.py               # E8Cache implementation
-│   └── network.py             # PyTorch E8E8Layer
+│   ├── constants.py        # structural constants and tolerances
+│   ├── root_system.py      # construct_e8_roots, construct_e8xe8_roots
+│   ├── adjacency.py        # the four adjacency conventions
+│   ├── clustering.py       # triangle/wedge counting, clustering
+│   ├── construction.py     # E8xE8RootSystem orchestrator
+│   ├── cache.py            # disk cache for root system + adjacency
+│   └── network.py          # PyTorch layer (optional)
+├── cli/
+│   └── compute_clustering.py   # CLI driver
 ├── utils/
-│   ├── mathematics.py         # Helper math functions
-│   └── device.py              # Device selection utilities
-├── tests/
-│   ├── test_construction.py   # Verify 496 generators
-│   └── test_clustering.py     # Verify 25/32 ratio
-└── setup.py
+│   ├── mathematics.py      # geometric helpers (deprecated stubs)
+│   └── device.py           # PyTorch device selection
+└── tests/
+    ├── test_root_system.py # 240/480 roots, norms, IP distribution
+    └── test_clustering.py  # triangle counting, regularity, hardcode guard
 ```
 
-## 🔬 Scientific Validation
-
-### Clustering Coefficient Verification
-
-The fundamental property C(G) = 25/32 is verified through multiple independent methods:
-
-```python
-from e8_heterotic import verify_e8_construction
-
-# Run comprehensive validation
-results = verify_e8_construction()
-
-print(f"✓ E8×E8 generators: {results['num_nodes']}")
-print(f"✓ Network edges: {results['num_edges']}")
-print(f"✓ Clustering coefficient: {results['clustering_coefficient']:.8f}")
-```
-
-### Mathematical Properties
-
-- **Root Norms**: All 240 roots per E8 have norm √2
-- **Angle Relationships**: Roots connected at 60°, 90°, or 120° angles
-- **Connectivity**: Single connected component with high average degree
-- **Symmetry**: Preserves E8×E8 heterotic group structure
-
-## 🎯 Use Cases
-
-### Geometric Deep Learning
-```python
-# Replace standard MLP layers with geometric processing
-import torch.nn as nn
-from e8_heterotic import E8E8Layer
-
-class GeometricModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.geometric_layer = E8E8Layer(784, 256)  # MNIST input to latent
-        self.classifier = nn.Linear(256, 10)
-
-    def forward(self, x):
-        x = self.geometric_layer(x.view(x.size(0), -1))
-        return self.classifier(x)
-```
-
-### Information Processing Research
-```python
-# Study fundamental information propagation limits
-from e8_heterotic import get_e8_network_properties
-
-properties = get_e8_network_properties()
-print(f"Small-world properties: L={properties['characteristic_path_length']:.2f}")
-print(f"High clustering: C={properties['clustering_coefficient']:.8f}")
-print(f"Information capacity: {properties['num_nodes']} nodes")
-```
-
-### Physics Simulations
-```python
-# Model fundamental spacetime information processing
-from e8_heterotic import E8E8Layer
-
-# Simulate information propagation through spacetime geometry
-spacetime_layer = E8E8Layer(
-    input_dim=64,    # Local field configurations
-    output_dim=64,   # Evolved configurations
-    propagation_steps=3  # Temporal steps
-)
-```
-
-## 🖥️ Hardware Acceleration
-
-### CUDA Support
-```python
-import torch
-from e8_heterotic import E8E8Layer
-
-# Automatic CUDA detection and sparse matrix optimization
-layer = E8E8Layer(512, 256, device='cuda')
-print(f"Using device: {layer.device}")
-print(f"Sparse matrices: {layer.use_sparse}")
-```
-
-### Apple Silicon (MPS) Support
-```python
-# Automatic fallback to dense matrices for MPS compatibility
-layer = E8E8Layer(512, 256, device='mps')  # Falls back to CPU if MPS sparse unsupported
-```
-
-### Memory Optimization
-- **Sparse Matrices**: Automatic sparse COO tensor usage on CUDA/CPU
-- **Dense Fallback**: MPS compatibility with dense matrix operations
-- **Caching**: Persistent storage of expensive geometric computations
-
-## 🧪 Testing
-
-Run the comprehensive test suite:
+## Running the tests
 
 ```bash
-# Install test dependencies
-pip install e8-heterotic-network[dev]
-
-# Run tests
-python -m pytest e8_heterotic/tests/
-
-# Run specific tests
-python -m pytest e8_heterotic/tests/test_clustering.py -v
+python -m pytest e8_heterotic/tests
 ```
 
-### Test Coverage
-- **Construction Tests**: Verify 496 generators with correct geometry
-- **Clustering Tests**: Validate exact 25/32 ratio via multiple methods
-- **Network Tests**: Confirm connectivity and structural properties
-- **Hardware Tests**: CUDA/MPS/CPU compatibility validation
+The suite checks:
 
-## 📊 Performance Benchmarks
+- Root counts (240, 480), squared norms (=2), inner-product distribution,
+  closure under negation.
+- Triangle counts agree between `trace(A³)/6` and NetworkX on small
+  graphs and on the full E8 graph.
+- E8 graph regularity for each convention (degrees 56, 113, 112, 56).
+- Conventions A and D do *not* produce identical clustering values
+  (they share edge count but have very different triangle counts).
+- Empty / path / Petersen graphs return clustering 0, ruling out
+  hardcoded returns.
 
-### Construction Time
-- **First Run**: ~2-5 seconds (with caching)
-- **Cached Runs**: ~0.1 seconds
-- **Memory Usage**: ~50MB for cached data
+## License
 
-### Forward Pass Performance
-- **CPU**: ~10-50 μs per sample (depends on propagation steps)
-- **CUDA**: ~5-20 μs per sample (with sparse optimization)
-- **MPS**: ~10-40 μs per sample (dense matrix operations)
-
-## 🤝 Contributing
-
-We welcome contributions from physicists, mathematicians, and machine learning researchers!
-
-### Development Setup
-```bash
-git clone https://github.com/e8-heterotic-network/e8-heterotic-network.git
-cd e8-heterotic-network
-pip install -e .[dev]
-```
-
-### Code Standards
-- **Physics Accuracy**: All implementations must maintain mathematical rigor
-- **Documentation**: Comprehensive docstrings with mathematical notation
-- **Testing**: 100% test coverage for core functionality
-- **Performance**: Memory-efficient sparse matrix operations
-
-### Research Applications
-We're particularly interested in collaborations exploring:
-- Quantum information processing
-- Geometric deep learning architectures
-- String theory phenomenology
-- Holographic information bounds
-
-## 📚 References
-
-### Theoretical Foundation
-1. **E8 Root System**: Standard Lie algebra construction from mathematical physics
-2. **Heterotic String Theory**: E8×E8 compactification in 10D superstring theory
-3. **Clustering Coefficient Derivation**: Geometric constraints on root system triangles
-4. **Origami Universe Theory**: Information-theoretic approach to spacetime emergence
-
-### Key Papers
-- [String Theory and E8×E8 Heterotic Vacua](https://arxiv.org/abs/hep-th/0105155)
-- [Exceptional Lie Algebras and Root Systems](https://www.ams.org/journals/bull/1974-80-03/S0002-9904-1974-13490-8/)
-- [Small-World Networks and the E8 Root System](https://arxiv.org/abs/cond-mat/0205601)
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-This implementation is based on decades of mathematical physics research into exceptional Lie algebras and string theory. Special thanks to the mathematical physics community for establishing the rigorous foundations that make this work possible.
-
----
-
-**E8×E8 Heterotic Network**: Bridging string theory mathematics with modern geometric deep learning.
+MIT — see [LICENSE](LICENSE).
