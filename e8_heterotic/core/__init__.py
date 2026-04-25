@@ -1,30 +1,63 @@
-"""
-E8×E8 Heterotic Core Components
+"""Core components of the E8 ⊕ E8 root system analysis."""
 
-This module contains the core mathematical and computational components
-of the E8×E8 heterotic network implementation.
-"""
-
-from .constants import *
-from .construction import *
-from .cache import *
-from .network import *
+from e8_heterotic.core.adjacency import (
+    CONVENTIONS,
+    adjacency_absolute_inner_product_one,
+    adjacency_inner_product_minus_one,
+    adjacency_inner_product_nonzero,
+    adjacency_inner_product_one,
+)
+from e8_heterotic.core.cache import (
+    E8Cache,
+    get_e8_adjacency_matrix,
+    get_e8_cache,
+    get_e8_clustering_coefficient,
+    get_e8_root_system,
+)
+from e8_heterotic.core.clustering import (
+    count_triangles_and_wedges,
+    degree_distribution,
+    global_clustering_coefficient,
+    mean_local_clustering_coefficient,
+)
+from e8_heterotic.core.constants import (
+    E8_CARTAN,
+    E8_CLUSTERING_LITERATURE_CLAIM,
+    E8_ROOT_NORM,
+    E8_ROOTS,
+    E8XE8_EMBEDDING_DIM,
+    E8XE8_ROOTS,
+)
+from e8_heterotic.core.construction import E8xE8RootSystem
+from e8_heterotic.core.root_system import (
+    construct_cartan_subalgebra,
+    construct_e8_roots,
+    construct_e8xe8_roots,
+)
 
 __all__ = [
-    # From constants
-    'E8_CLUSTERING', 'E8_ROOTS', 'E8_CARTAN', 'E8_DIMENSION',
-    'E8XE8_TOTAL_GENERATORS', 'E8XE8_EMBEDDING_DIM',
-    'get_e8_clustering_coefficient', 'get_e8_dimensions',
-    'get_information_bounds', 'validate_constants',
-
-    # From construction
-    'E8HeteroticSystem', 'verify_e8_construction',
-
-    # From cache
-    'E8Cache', 'get_e8_cache', 'get_e8_clustering_coefficient',
-    'get_e8_root_system', 'get_e8_adjacency_matrix',
-    'get_e8_3d_coordinates', 'get_e8_fold_coordinates',
-
-    # From network
-    'E8E8Layer', 'create_e8_layer', 'get_e8_network_properties'
+    "CONVENTIONS",
+    "E8Cache",
+    "E8xE8RootSystem",
+    "E8_CARTAN",
+    "E8_CLUSTERING_LITERATURE_CLAIM",
+    "E8_ROOTS",
+    "E8_ROOT_NORM",
+    "E8XE8_EMBEDDING_DIM",
+    "E8XE8_ROOTS",
+    "adjacency_absolute_inner_product_one",
+    "adjacency_inner_product_minus_one",
+    "adjacency_inner_product_nonzero",
+    "adjacency_inner_product_one",
+    "construct_cartan_subalgebra",
+    "construct_e8_roots",
+    "construct_e8xe8_roots",
+    "count_triangles_and_wedges",
+    "degree_distribution",
+    "get_e8_adjacency_matrix",
+    "get_e8_cache",
+    "get_e8_clustering_coefficient",
+    "get_e8_root_system",
+    "global_clustering_coefficient",
+    "mean_local_clustering_coefficient",
 ]

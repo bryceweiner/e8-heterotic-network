@@ -108,7 +108,7 @@ EXTRAS_REQUIRE = {
 # Entry points for command line scripts
 ENTRY_POINTS = {
     'console_scripts': [
-        'e8-heterotic-verify=e8_heterotic.core.construction:verify_e8_construction',
+        'e8-heterotic-clustering=e8_heterotic.cli.compute_clustering:main',
     ],
 }
 

@@ -1,172 +1,100 @@
 """
-E8×E8 Heterotic Network: Geometric Deep Learning Layer
+E8×E8 Heterotic Network: honest E8 ⊕ E8 root system, adjacency, and clustering.
 
-This package implements the 496-dimensional E8×E8 heterotic structure from string theory
-as a differentiable PyTorch layer with exact clustering coefficient C(G) = 25/32 (0.78125).
-
-The E8×E8 heterotic construction combines two independent E8 exceptional Lie algebras
-to create an optimal information processing architecture for geometric deep learning.
-
-Key Features:
-- Exact mathematical implementation of E8×E8 heterotic structure
-- Guaranteed clustering coefficient of 25/32 (0.78125)
-- 496-dimensional geometric latent space
-- Holographic information bounds enforcement
-- Hardware acceleration (CUDA/MPS/CPU) with sparse matrix optimization
-- Comprehensive caching system for expensive computations
-
-Basic Usage:
-    import torch
-    from e8_heterotic import E8E8Layer
-
-    # Create E8×E8 layer
-    layer = E8E8Layer(input_dim=128, output_dim=64)
-
-    # Forward pass
-    x = torch.randn(32, 128)  # Batch of 32, 128 features
-    output = layer(x)  # Shape: (32, 64)
-
-For more information, see the documentation and examples.
+The clustering coefficient of the E8 ⊕ E8 root graph is a derived quantity
+computed from the adjacency matrix; this package never returns a hardcoded
+clustering value. See :mod:`e8_heterotic.core.clustering` and
+:mod:`e8_heterotic.core.adjacency`.
 """
 
-from e8_heterotic.core.constants import (
-    E8_CLUSTERING,
-    E8_ROOTS,
-    E8_CARTAN,
-    E8_DIMENSION,
-    E8XE8_TOTAL_GENERATORS,
-    E8XE8_EMBEDDING_DIM,
-    get_e8_clustering_coefficient,
-    get_e8_dimensions,
-    get_information_bounds,
-    validate_constants
+from e8_heterotic.core.adjacency import (
+    CONVENTIONS,
+    adjacency_absolute_inner_product_one,
+    adjacency_inner_product_minus_one,
+    adjacency_inner_product_nonzero,
+    adjacency_inner_product_one,
 )
-
-from e8_heterotic.core.construction import (
-    E8HeteroticSystem,
-    verify_e8_construction
-)
-
 from e8_heterotic.core.cache import (
     E8Cache,
-    get_e8_cache,
-    get_e8_clustering_coefficient as get_cached_clustering,
-    get_e8_root_system,
     get_e8_adjacency_matrix,
-    get_e8_3d_coordinates,
-    get_e8_fold_coordinates
+    get_e8_cache,
+    get_e8_clustering_coefficient,
+    get_e8_root_system,
+)
+from e8_heterotic.core.clustering import (
+    count_triangles_and_wedges,
+    degree_distribution,
+    global_clustering_coefficient,
+    mean_local_clustering_coefficient,
+)
+from e8_heterotic.core.constants import (
+    E8_CARTAN,
+    E8_CLUSTERING_LITERATURE_CLAIM,
+    E8_CLUSTERING_LITERATURE_FRACTION,
+    E8_ROOT_NORM,
+    E8_ROOT_NORM_SQUARED,
+    E8_ROOTS,
+    E8XE8_EMBEDDING_DIM,
+    E8XE8_ROOTS,
+)
+from e8_heterotic.core.construction import E8xE8RootSystem
+from e8_heterotic.core.root_system import (
+    construct_cartan_subalgebra,
+    construct_e8_roots,
+    construct_e8xe8_roots,
 )
 
-from e8_heterotic.core.network import (
-    E8E8Layer,
-    create_e8_layer,
-    get_e8_network_properties
-)
-
-from e8_heterotic.utils.mathematics import (
-    normalize_vector,
-    calculate_angle,
-    check_adjacency_condition,
-    calculate_clustering_coefficient,
-    count_triangles_and_triplets,
-    validate_root_norms,
-    validate_dot_products,
-    calculate_geometric_properties
-)
-
-from e8_heterotic.utils.device import (
-    get_available_devices,
-    get_optimal_device,
-    get_sparse_safe_device,
-    is_sparse_supported,
-    get_device_info,
-    print_device_info,
-    setup_e8_computation_environment
-)
-
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "E8 Heterotic Network Team"
-__description__ = "E8×E8 Heterotic Structure for Geometric Deep Learning"
+__description__ = "Honest E8 ⊕ E8 root system and clustering analysis"
 __license__ = "MIT"
 
 __all__ = [
-    # Core classes
-    'E8HeteroticSystem',
-    'E8Cache',
-    'E8E8Layer',
-
-    # Constants and utilities
-    'E8_CLUSTERING',
-    'E8_ROOTS',
-    'E8_CARTAN',
-    'E8_DIMENSION',
-    'E8XE8_TOTAL_GENERATORS',
-    'E8XE8_EMBEDDING_DIM',
-
-    # Functions
-    'get_e8_clustering_coefficient',
-    'get_e8_dimensions',
-    'get_information_bounds',
-    'validate_constants',
-    'verify_e8_construction',
-    'get_e8_cache',
-    'get_cached_clustering',
-    'get_e8_root_system',
-    'get_e8_adjacency_matrix',
-    'get_e8_3d_coordinates',
-    'get_e8_fold_coordinates',
-    'create_e8_layer',
-    'get_e8_network_properties',
-
-    # Mathematics utilities
-    'normalize_vector',
-    'calculate_angle',
-    'check_adjacency_condition',
-    'calculate_clustering_coefficient',
-    'count_triangles_and_triplets',
-    'validate_root_norms',
-    'validate_dot_products',
-    'calculate_geometric_properties',
-
-    # Device utilities
-    'get_available_devices',
-    'get_optimal_device',
-    'get_sparse_safe_device',
-    'is_sparse_supported',
-    'get_device_info',
-    'print_device_info',
-    'setup_e8_computation_environment'
+    # Core orchestration
+    "E8xE8RootSystem",
+    # Construction
+    "construct_e8_roots",
+    "construct_e8xe8_roots",
+    "construct_cartan_subalgebra",
+    # Adjacency
+    "CONVENTIONS",
+    "adjacency_inner_product_one",
+    "adjacency_inner_product_nonzero",
+    "adjacency_absolute_inner_product_one",
+    "adjacency_inner_product_minus_one",
+    # Clustering
+    "count_triangles_and_wedges",
+    "degree_distribution",
+    "global_clustering_coefficient",
+    "mean_local_clustering_coefficient",
+    # Caching
+    "E8Cache",
+    "get_e8_cache",
+    "get_e8_clustering_coefficient",
+    "get_e8_root_system",
+    "get_e8_adjacency_matrix",
+    # Constants
+    "E8_ROOTS",
+    "E8_CARTAN",
+    "E8XE8_ROOTS",
+    "E8XE8_EMBEDDING_DIM",
+    "E8_ROOT_NORM",
+    "E8_ROOT_NORM_SQUARED",
+    "E8_CLUSTERING_LITERATURE_CLAIM",
+    "E8_CLUSTERING_LITERATURE_FRACTION",
 ]
 
-def __validate_installation():
-    """Validate that the package is properly installed and all dependencies are available."""
+
+def _try_import_layer():
+    """Make :class:`E8E8Layer` importable when PyTorch is present."""
     try:
-        import torch
-        import numpy
-        import scipy
-        import networkx
+        from e8_heterotic.core.network import E8E8Layer, create_e8_layer
+    except ImportError:
+        return None
+    globals()["E8E8Layer"] = E8E8Layer
+    globals()["create_e8_layer"] = create_e8_layer
+    __all__.extend(["E8E8Layer", "create_e8_layer"])
+    return E8E8Layer
 
-        # Try sklearn import (optional)
-        try:
-            import sklearn
-            sklearn_available = True
-        except ImportError:
-            sklearn_available = False
 
-        # Validate constants
-        validation = validate_constants()
-
-        if validation.get('overall', {}).get('valid', False):
-            print("✓ E8×E8 Heterotic Network package validated successfully")
-            if not sklearn_available:
-                print("⚠ sklearn not available - geometric projections will be limited")
-        else:
-            print("⚠ Some constants failed validation - package may not work correctly")
-
-    except ImportError as e:
-        print(f"✗ Missing dependency: {e}")
-        print("Please install required dependencies: pip install torch numpy scipy networkx")
-
-# Run validation on import (only in interactive mode)
-if __name__ != "__main__":
-    __validate_installation()
+_try_import_layer()
